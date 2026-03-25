@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::prefix('api/metas')->name('metas.api.')->group(function () {
             Route::get('/', [MetaController::class, 'apiListar'])->name('index');
             Route::get('/resumo', [MetaController::class, 'apiResumo'])->name('resumo');
+            Route::post('/', [MetaController::class, 'apiStore'])->name('store');
+            Route::put('/{id}', [MetaController::class, 'apiUpdate'])->name('update');
         });
 
         Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes');

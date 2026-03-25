@@ -98,7 +98,87 @@ class MetaController extends Controller
     public function apiResumo(Request $request)
     {
         $mes = $request->get('mes', Carbon::now()->format('Y-m'));
-        return response()->json($this->getResumoDados($mes));
+        $vendedorId = $request->get('vendedor_id');
+        return response()->json($this->getResumoDados($mes, $vendedorId));
+    }
+
+    /**
+     * API: Atualizar meta
+     */
+    public function apiUpdate(Request $request, $id)
+    {
+        $meta = Meta::findOrFail($id);
+
+        $request->validate([
+            'valor_meta' => 'sometimes|numeric|min:0',
+            'observacao' => 'nullable|string',
+            'status' => 'sometimes|in:não iniciada,em andamento,atingida,não atingida,superada',
+        ]);
+
+        $meta->update($request->only(['valor_meta', 'observacao', 'status']));
+
+        $perf = $this->carregarDadosPerformance($meta);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Meta atualizada com sucesso.',
+            'data' => [
+                'id' => $meta->id,
+                'vendedor_id' => $meta->vendedor_id,
+                'vendedor_nome' => $meta->vendedor->user->name ?? 'N/A',
+                'mes_referencia' => $meta->mes_referencia,
+                'valor_meta' => $meta->valor_meta,
+                'valor_vendido' => $perf->valor_vendido,
+                'valor_recebido' => $perf->valor_recebido,
+                'percentual_atingido' => $perf->percentual,
+                'status_meta' => $meta->status,
+            ],
+        ]);
+    }
+
+    /**
+     * API: Criar meta
+     */
+    public function apiStore(Request $request)
+    {
+        $request->validate([
+            'vendedor_id' => 'required|exists:vendedores,id',
+            'mes_referencia' => 'required|date_format:Y-m',
+            'valor_meta' => 'required|numeric|min:0',
+            'observacao' => 'nullable|string',
+            'status' => 'sometimes|in:não iniciada,em andamento,atingida,não atingida,superada',
+        ]);
+
+        $exists = Meta::where('vendedor_id', $request->vendedor_id)
+                      ->where('mes_referencia', $request->mes_referencia)
+                      ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este vendedor já possui uma meta cadastrada para este mês.',
+            ], 422);
+        }
+
+        $meta = Meta::create($request->only(['vendedor_id', 'mes_referencia', 'valor_meta', 'observacao', 'status']));
+        $meta->load('vendedor.user');
+        $perf = $this->carregarDadosPerformance($meta);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Meta criada com sucesso.',
+            'data' => [
+                'id' => $meta->id,
+                'vendedor_id' => $meta->vendedor_id,
+                'vendedor_nome' => $meta->vendedor->user->name ?? 'N/A',
+                'mes_referencia' => $meta->mes_referencia,
+                'valor_meta' => $meta->valor_meta,
+                'valor_vendido' => $perf->valor_vendido,
+                'valor_recebido' => $perf->valor_recebido,
+                'percentual_atingido' => $perf->percentual,
+                'status_meta' => $meta->status,
+            ],
+        ], 201);
     }
 
     /**
@@ -144,16 +224,16 @@ class MetaController extends Controller
             ->whereNotIn('status', ['Cancelado', 'Expirado'])
             ->sum('valor');
 
-        // Valor Recebido (Pagamentos pagos e não estornados)
+        // Valor Recebido (Pagamentos confirmados)
         $meta->valor_recebido = Pagamento::where('vendedor_id', $meta->vendedor_id)
             ->whereBetween('created_at', [$dataInicio, $dataFim])
-            ->where('status', 'pago')
+            ->whereIn('status', ['RECEIVED', 'CONFIRMED'])
             ->sum('valor');
 
-        // Clientes Ativos (com pagamento no mês)
+        // Clientes Ativos (com pagamento confirmado no mês)
         $meta->clientes_ativos = Pagamento::where('vendedor_id', $meta->vendedor_id)
             ->whereBetween('created_at', [$dataInicio, $dataFim])
-            ->where('status', 'pago')
+            ->whereIn('status', ['RECEIVED', 'CONFIRMED'])
             ->distinct('cliente_id')
             ->count('cliente_id');
 
