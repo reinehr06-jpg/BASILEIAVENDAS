@@ -50,9 +50,17 @@ class VendaController extends Controller
         // Sincronizar proativamente vendas pendentes com Asaas
         self::syncPendentes($vendedor->id);
 
+        // Vendas ativas (não canceladas, não expiradas)
         $vendas = Venda::where('vendedor_id', $vendedor->id)
-            ->whereNotIn('status', ['Expirado'])
+            ->whereNotIn('status', ['Expirado', 'Cancelado'])
             ->with(['cliente', 'cobrancas', 'pagamentos'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Vendas canceladas (aba separada)
+        $vendasCanceladas = Venda::where('vendedor_id', $vendedor->id)
+            ->where('status', 'Cancelado')
+            ->with(['cliente'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -62,7 +70,7 @@ class VendaController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('vendedor.vendas.index', compact('vendas', 'vendasExpiradas'));
+        return view('vendedor.vendas.index', compact('vendas', 'vendasCanceladas', 'vendasExpiradas'));
     }
 
     // ==========================================
@@ -311,8 +319,15 @@ class VendaController extends Controller
         // Sincronizar proativamente todas as vendas pendentes com Asaas
         self::syncPendentes();
 
-        $vendas = Venda::whereNotIn('status', ['Expirado'])
+        // Vendas ativas (não canceladas, não expiradas)
+        $vendas = Venda::whereNotIn('status', ['Expirado', 'Cancelado'])
             ->with(['cliente', 'vendedor.user', 'cobrancas'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Vendas canceladas (aba separada)
+        $vendasCanceladas = Venda::where('status', 'Cancelado')
+            ->with(['cliente', 'vendedor.user'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -321,7 +336,7 @@ class VendaController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('master.vendas.index', compact('vendas', 'vendasExpiradas'));
+        return view('master.vendas.index', compact('vendas', 'vendasCanceladas', 'vendasExpiradas'));
     }
 
     // ==========================================

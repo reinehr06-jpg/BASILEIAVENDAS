@@ -26,7 +26,7 @@ class ClienteController extends Controller
         if (!$isMaster) {
             $query->whereHas('vendas', function ($q) use ($user) {
                 $q->whereHas('vendedor', function ($v) use ($user) {
-                    $v->where('user_id', $user->id);
+                    $v->where('usuario_id', $user->id);
                 });
             });
         }
@@ -57,7 +57,7 @@ class ClienteController extends Controller
         if (!$isMaster) {
             $clientes->whereHas('vendas', function ($q) use ($user) {
                 $q->whereHas('vendedor', function ($v) use ($user) {
-                    $v->where('user_id', $user->id);
+                    $v->where('usuario_id', $user->id);
                 });
             });
         }
@@ -81,7 +81,7 @@ class ClienteController extends Controller
         if (!$isMaster) {
             $allClientes->whereHas('vendas', function ($q) use ($user) {
                 $q->whereHas('vendedor', function ($v) use ($user) {
-                    $v->where('user_id', $user->id);
+                    $v->where('usuario_id', $user->id);
                 });
             });
         }
@@ -116,7 +116,7 @@ class ClienteController extends Controller
         // Se for vendedor, garantir que ele tem acesso a este cliente
         if (!$isMaster) {
             $temAcesso = $cliente->vendas()->whereHas('vendedor', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
+                $q->where('usuario_id', $user->id);
             })->exists();
             
             if (!$temAcesso) {

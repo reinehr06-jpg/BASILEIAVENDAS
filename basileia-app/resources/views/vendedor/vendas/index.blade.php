@@ -81,6 +81,10 @@
         <div class="stat-label">Aguardando</div>
     </div>
     <div class="stat-mini">
+        <div class="stat-value" style="color: #ef4444;">{{ $vendasCanceladas->count() ?? 0 }}</div>
+        <div class="stat-label">Canceladas</div>
+    </div>
+    <div class="stat-mini">
         <div class="stat-value">R$ {{ number_format($vendas->filter(fn($v) => in_array(trim(strtoupper($v->status)), ['PAGO', 'RECEIVED', 'CONFIRMED']))->sum('valor'), 2, ',', '.') }}</div>
         <div class="stat-label">Receita</div>
     </div>
