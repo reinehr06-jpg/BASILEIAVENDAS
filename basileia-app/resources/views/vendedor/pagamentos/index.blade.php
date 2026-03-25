@@ -182,9 +182,7 @@
                 </td>
                 <td>
                     @if($pag->link)
-                        <button onclick="copyToClipboard('{{ $pag->link }}')" style="background: none; border: none; color: var(--primary); font-weight: 600; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">
-                            🔗 Copiar Link
-                        </button>
+                        <a href="{{ $pag->link }}" target="_blank" style="font-size: 0.82rem; color: var(--primary); font-weight: 600; text-decoration: none;">📄 Abrir Boleto</a>
                     @else
                         <span style="font-size: 0.82rem; color: var(--text-muted);">—</span>
                     @endif
@@ -212,18 +210,6 @@ function filterPag() {
         const matchStatus = !status || row.dataset.status === status;
         const matchForma = !forma || row.dataset.forma.includes(forma);
         row.style.display = (matchSearch && matchStatus && matchForma) ? '' : 'none';
-    });
-}
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        const toast = document.createElement('div');
-        toast.textContent = '✅ Link copiado para a área de transferência!';
-        toast.style.cssText = 'position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #166534; color: white; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: fadeIn 0.3s ease;';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
-    }).catch(() => {
-        prompt('Copie o link abaixo:', text);
     });
 }
 </script>
