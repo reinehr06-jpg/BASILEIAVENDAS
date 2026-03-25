@@ -12,6 +12,7 @@ use App\Models\Cobranca;
 use App\Models\Pagamento;
 use App\Models\Vendedor;
 use App\Services\AsaasService;
+use App\Services\PagamentoService;
 use Carbon\Carbon;
 
 class VendaController extends Controller
@@ -45,6 +46,9 @@ class VendaController extends Controller
 
         // Auto-expirar vendas com mais de 72h sem pagamento
         self::expirarVendasAntigas();
+
+        // Sincronizar proativamente vendas pendentes com Asaas
+        self::syncPendentes($vendedor->id);
 
         $vendas = Venda::where('vendedor_id', $vendedor->id)
             ->whereNotIn('status', ['Expirado'])
@@ -304,6 +308,9 @@ class VendaController extends Controller
         // Auto-expirar vendas com mais de 72h sem pagamento
         self::expirarVendasAntigas();
 
+        // Sincronizar proativamente todas as vendas pendentes com Asaas
+        self::syncPendentes();
+
         $vendas = Venda::whereNotIn('status', ['Expirado'])
             ->with(['cliente', 'vendedor.user', 'cobrancas'])
             ->orderByDesc('created_at')
@@ -357,6 +364,47 @@ class VendaController extends Controller
 
         return redirect()->route('master.vendas')
             ->with('success', 'Venda cancelada com sucesso.');
+    }
+
+    // ==========================================
+    // Sincronizar proativamente vendas pendentes com Asaas
+    // ==========================================
+    private static function syncPendentes(?int $vendedorId = null): void
+    {
+        try {
+            $statusesPendentes = ['Aguardando pagamento', 'PENDING', 'Vencido', 'OVERDUE', 'AGUARDANDO_PAGAMENTO'];
+
+            $query = Venda::whereIn('status', $statusesPendentes)
+                ->where('created_at', '>', now()->subDays(7))
+                ->whereHas('pagamentos', function ($q) {
+                    $q->whereNotNull('asaas_payment_id');
+                })
+                ->with(['pagamentos', 'cobrancas'])
+                ->take(10);
+
+            if ($vendedorId) {
+                $query->where('vendedor_id', $vendedorId);
+            }
+
+            $vendasPendentes = $query->get();
+
+            if ($vendasPendentes->isEmpty()) {
+                return;
+            }
+
+            $pagamentoService = new PagamentoService();
+
+            foreach ($vendasPendentes as $venda) {
+                $pagamento = $venda->pagamentos->first();
+                if ($pagamento && $pagamento->asaas_payment_id) {
+                    $pagamentoService->sync($pagamento);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('VendaController: Erro ao sincronizar pendentes', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     // ==========================================

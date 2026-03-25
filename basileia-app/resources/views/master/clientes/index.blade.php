@@ -49,9 +49,10 @@
     /* ===== Badges ===== */
     .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; text-transform: capitalize; }
     .badge-ativo { background: #dcfce7; color: #15803d; }
+    .badge-pendente { background: #fef9c3; color: #854d0e; }
     .badge-churn { background: #fee2e2; color: #b91c1c; }
     .badge-inadimplente { background: #fef3c7; color: #92400e; }
-    .badge-inativo { background: #f1f5f9; color: #475569; }
+    .badge-cancelado { background: #f1f5f9; color: #64748b; }
 
     .action-btn { background: white; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; transition: 0.2s; }
     .action-btn:hover { border-color: var(--primary); background: #f8fafc; }
@@ -74,17 +75,22 @@
     <div class="card animate-in">
         <span class="icon">🟢</span>
         <span class="value" style="color: #10b981;">{{ $cards['ativos'] }}</span>
-        <span class="label">Clientes Ativos</span>
+        <span class="label">Ativos</span>
     </div>
     <div class="card animate-in">
-        <span class="icon">🔴</span>
-        <span class="value" style="color: #ef4444;">{{ $cards['churn'] }}</span>
-        <span class="label">Churn Rate</span>
+        <span class="icon">🟡</span>
+        <span class="value" style="color: #f59e0b;">{{ $cards['pendentes'] }}</span>
+        <span class="label">Pendentes</span>
     </div>
     <div class="card animate-in">
         <span class="icon">⚠️</span>
-        <span class="value" style="color: #f59e0b;">{{ $cards['inadimplentes'] }}</span>
+        <span class="value" style="color: #ef4444;">{{ $cards['inadimplentes'] }}</span>
         <span class="label">Inadimplentes</span>
+    </div>
+    <div class="card animate-in">
+        <span class="icon">🔴</span>
+        <span class="value" style="color: #b91c1c;">{{ $cards['churn'] }}</span>
+        <span class="label">Churn</span>
     </div>
 </div>
 
@@ -100,9 +106,10 @@
         <select name="status">
             <option value="">Todos</option>
             <option value="ativo" {{ request('status') == 'ativo' ? 'selected' : '' }}>Ativo</option>
-            <option value="inativo" {{ request('status') == 'inativo' ? 'selected' : '' }}>Inativo</option>
-            <option value="churn" {{ request('status') == 'churn' ? 'selected' : '' }}>Churn / Cancelado</option>
+            <option value="pendente" {{ request('status') == 'pendente' ? 'selected' : '' }}>Pendente</option>
             <option value="inadimplente" {{ request('status') == 'inadimplente' ? 'selected' : '' }}>Inadimplente</option>
+            <option value="cancelado" {{ request('status') == 'cancelado' ? 'selected' : '' }}>Cancelado</option>
+            <option value="churn" {{ request('status') == 'churn' ? 'selected' : '' }}>Churn</option>
         </select>
     </div>
     <div style="display: flex; gap: 8px; align-items: flex-end;">
@@ -157,6 +164,12 @@
                 </td>
                 <td>
                     <span class="badge badge-{{ $c->status ?? 'ativo' }}">{{ ucfirst($c->status ?? 'Ativo') }}</span>
+                    @if($c->data_ultimo_pagamento)
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Último: {{ $c->data_ultimo_pagamento->format('d/m/Y') }}</div>
+                    @endif
+                    @if($c->proxima_cobranca)
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Próxima: {{ $c->proxima_cobranca->format('d/m/Y') }}</div>
+                    @endif
                 </td>
                 <td style="text-align: right;">
                     <a href="{{ route('master.clientes.show', $c->id) }}" class="action-btn">👁️ Detalhes</a>

@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\Venda;
 use App\Models\Pagamento;
 use App\Models\Vendedor;
+use App\Services\ClienteStatusService;
 use Illuminate\Support\Facades\Auth;
 
 class ClienteController extends Controller
@@ -40,18 +41,57 @@ class ClienteController extends Controller
             });
         }
         
+        // Default: mostrar apenas clientes ativos
         if ($request->filled('status')) {
             $query->where('status', $request->get('status'));
+        } else {
+            $query->where('status', 'ativo');
         }
         
-        $clientes = $query->with('vendas')->orderBy('created_at', 'desc')->paginate(15);
-        
-        // Cards de Resumo
+        // Sincronizar status dos clientes antes de listar
+        $clientesParaSync = (clone $query)->with('vendas.pagamentos')->get();
+        ClienteStatusService::sincronizarStatus($clientesParaSync);
+
+        // Re-carregar com status atualizado
+        $clientes = Cliente::query();
+        if (!$isMaster) {
+            $clientes->whereHas('vendas', function ($q) use ($user) {
+                $q->whereHas('vendedor', function ($v) use ($user) {
+                    $v->where('user_id', $user->id);
+                });
+            });
+        }
+        if ($request->filled('busca')) {
+            $busca = $request->get('busca');
+            $clientes->where(function($q) use ($busca) {
+                $q->where('nome_igreja', 'like', "%{$busca}%")
+                  ->orWhere('nome_pastor', 'like', "%{$busca}%")
+                  ->orWhere('documento', 'like', "%{$busca}%");
+            });
+        }
+        if ($request->filled('status')) {
+            $clientes->where('status', $request->get('status'));
+        } else {
+            $clientes->where('status', 'ativo');
+        }
+        $clientes = $clientes->with('vendas')->orderBy('created_at', 'desc')->paginate(15);
+
+        // Cards de Resumo (baseado em TODOS os clientes, não apenas os filtrados)
+        $allClientes = Cliente::query();
+        if (!$isMaster) {
+            $allClientes->whereHas('vendas', function ($q) use ($user) {
+                $q->whereHas('vendedor', function ($v) use ($user) {
+                    $v->where('user_id', $user->id);
+                });
+            });
+        }
         $cards = [
-            'total' => (clone $query)->count(),
-            'ativos' => (clone $query)->where('status', 'ativo')->orWhereNull('status')->count(),
-            'churn' => (clone $query)->where('status', 'churn')->count(),
-            'inadimplentes' => (clone $query)->where('status', 'inadimplente')->count(),
+            'total' => (clone $allClientes)->count(),
+            'ativos' => (clone $allClientes)->where('status', 'ativo')->count(),
+            'pendentes' => (clone $allClientes)->where('status', 'pendente')->count(),
+            'inadimplentes' => (clone $allClientes)->where('status', 'inadimplente')->count(),
+            'churn' => (clone $allClientes)->where('status', 'churn')->count(),
+            'cancelados' => (clone $allClientes)->where('status', 'cancelado')->count(),
         ];
         
         $viewPath = $isMaster ? 'master.clientes.index' : 'vendedor.clientes.index';
@@ -68,6 +108,10 @@ class ClienteController extends Controller
         $isMaster = $user->perfil === 'master';
         
         $cliente = Cliente::with(['vendas.vendedor.user', 'vendas.pagamentos'])->findOrFail($id);
+        
+        // Sincronizar status deste cliente
+        ClienteStatusService::atualizarCliente($cliente);
+        $cliente->refresh();
         
         // Se for vendedor, garantir que ele tem acesso a este cliente
         if (!$isMaster) {
@@ -103,7 +147,7 @@ class ClienteController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:ativo,inativo,churn,inadimplente'
+            'status' => 'required|in:ativo,pendente,inadimplente,cancelado,churn'
         ]);
         
         $cliente = Cliente::findOrFail($id);

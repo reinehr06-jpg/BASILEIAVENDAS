@@ -7,6 +7,7 @@ use App\Models\Venda;
 use App\Models\LogEvento;
 use App\Mail\VendaConfirmadaMail;
 use App\Mail\ClienteConfirmacaoMail;
+use App\Services\ClienteStatusService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Services\AsaasService;
@@ -72,6 +73,12 @@ class PagamentoService
                         $cobranca->status = $statusAsaas;
                         $cobranca->save();
                     }
+
+                    // Atualizar status do cliente
+                    $cliente = $venda->cliente;
+                    if ($cliente) {
+                        ClienteStatusService::atualizarCliente($cliente);
+                    }
                 }
             }
 
@@ -118,6 +125,14 @@ class PagamentoService
             foreach ($venda->cobrancas as $cobranca) {
                 $cobranca->status = 'RECEIVED';
                 $cobranca->save();
+            }
+
+            // Atualizar status do cliente para ATIVO
+            $cliente = $venda->cliente;
+            if ($cliente) {
+                $cliente->status = 'ativo';
+                $cliente->data_ultimo_pagamento = now();
+                $cliente->save();
             }
 
             // Automações (Email)
