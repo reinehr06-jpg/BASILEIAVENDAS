@@ -9,35 +9,34 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Venda;
 use App\Models\Pagamento;
+use App\Models\Cliente;
 
-class VendaConfirmadaMail extends Mailable
+class ClienteConfirmacaoMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public Venda $venda;
-    public float $comissao;
-    public string $linkVenda;
-    public ?Pagamento $pagamento;
+    public Pagamento $pagamento;
+    public Cliente $cliente;
 
-    public function __construct(Venda $venda, float $comissao, string $linkVenda, ?Pagamento $pagamento = null)
+    public function __construct(Venda $venda, Pagamento $pagamento, Cliente $cliente)
     {
         $this->venda = $venda;
-        $this->comissao = $comissao;
-        $this->linkVenda = $linkVenda;
         $this->pagamento = $pagamento;
+        $this->cliente = $cliente;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Pagamento confirmado da venda — Basiléia Vendas',
+            subject: 'Sua compra foi confirmada! — Basiléia',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.venda-confirmada',
+            markdown: 'emails.cliente-confirmacao',
         );
     }
 }

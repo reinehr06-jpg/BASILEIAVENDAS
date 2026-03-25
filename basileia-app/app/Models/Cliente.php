@@ -8,7 +8,7 @@ class Cliente extends Model
 {
     protected $fillable = [
         'nome', 'nome_igreja', 'nome_pastor', 'nome_responsavel', 'localidade',
-        'moeda', 'quantidade_membros', 'documento', 'contato', 'whatsapp', 'telefone', 'status', 'asaas_customer_id'
+        'moeda', 'quantidade_membros', 'documento', 'contato', 'whatsapp', 'telefone', 'email', 'status', 'asaas_customer_id'
     ];
 
     public function vendas()

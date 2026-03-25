@@ -170,25 +170,25 @@ class AsaasWebhookController extends Controller
                 }
             }
 
+            // Buscar nota fiscal ANTES de disparar automações (para que o e-mail do cliente tenha o link)
+            if (in_array($novoStatusPagamento, ['RECEIVED', 'CONFIRMED']) && $asaasPaymentId) {
+                try {
+                    $asaas = new AsaasService();
+                    $invoice = $asaas->getInvoice($asaasPaymentId);
+                    if ($invoice && !empty($invoice['invoiceUrl'])) {
+                        $pagamento->nota_fiscal_url    = $invoice['invoiceUrl'];
+                        $pagamento->nota_fiscal_status = 'emitida';
+                        $pagamento->save();
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Asaas Webhook: erro ao buscar NF', ['error' => $e->getMessage()]);
+                }
+            }
+
             // Gerar comissão + automações via Service quando confirmado
             if (in_array($novoStatusPagamento, ['RECEIVED', 'CONFIRMED']) && strtoupper($statusVendaAnterior) !== 'PAGO') {
                 $pagamentoService = new \App\Services\PagamentoService();
                 $pagamentoService->confirmarPagamento($pagamento, $payment);
-            }
-        }
-
-        // Buscar nota fiscal se disponível
-        if (in_array($novoStatusPagamento, ['RECEIVED', 'CONFIRMED']) && $asaasPaymentId) {
-            try {
-                $asaas = new AsaasService();
-                $invoice = $asaas->getInvoice($asaasPaymentId);
-                if ($invoice && !empty($invoice['invoiceUrl'])) {
-                    $pagamento->nota_fiscal_url    = $invoice['invoiceUrl'];
-                    $pagamento->nota_fiscal_status = 'emitida';
-                    $pagamento->save();
-                }
-            } catch (\Exception $e) {
-                Log::warning('Asaas Webhook: erro ao buscar NF', ['error' => $e->getMessage()]);
             }
         }
 

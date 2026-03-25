@@ -6,6 +6,7 @@ use App\Models\Pagamento;
 use App\Models\Venda;
 use App\Models\LogEvento;
 use App\Mail\VendaConfirmadaMail;
+use App\Mail\ClienteConfirmacaoMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Services\AsaasService;
@@ -140,12 +141,20 @@ class PagamentoService
     private function dispararAutomacoes(Venda $venda, Pagamento $pagamento): void
     {
         try {
+            // 1. E-mail do Vendedor
             $vendedor = $venda->vendedor;
             if ($vendedor && $vendedor->user && $vendedor->user->email) {
                 $comissao = $venda->comissao_gerada ?? 0;
                 $linkVenda = url("/vendedor/vendas");
                 Mail::to($vendedor->user->email)
-                    ->send(new VendaConfirmadaMail($venda, $comissao, $linkVenda));
+                    ->send(new VendaConfirmadaMail($venda, $comissao, $linkVenda, $pagamento));
+            }
+
+            // 2. E-mail do Cliente
+            $cliente = $venda->cliente;
+            if ($cliente && $cliente->email) {
+                Mail::to($cliente->email)
+                    ->send(new ClienteConfirmacaoMail($venda, $pagamento, $cliente));
             }
         } catch (\Exception $e) {
             Log::error('PagamentoService: Falha ao enviar e-mail', ['venda_id' => $venda->id, 'error' => $e->getMessage()]);

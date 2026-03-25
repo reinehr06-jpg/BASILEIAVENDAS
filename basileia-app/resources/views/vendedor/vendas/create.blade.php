@@ -145,6 +145,11 @@
                 <label>WhatsApp de Contato <span class="required">*</span></label>
                 <input type="text" name="whatsapp" id="inputWhatsapp" value="{{ old('whatsapp') }}" required placeholder="Digite o número com DDD" maxlength="15">
             </div>
+            <div class="form-group" style="flex: 0.5;">
+                <label>E-mail do Cliente <span class="required">*</span></label>
+                <input type="email" name="email_cliente" value="{{ old('email_cliente') }}" required placeholder="email@igreja.com">
+                @error('email_cliente') <div class="field-error">{{ $message }}</div> @enderror
+            </div>
         </div>
     </div>
 

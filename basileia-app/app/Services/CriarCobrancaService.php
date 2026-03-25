@@ -113,6 +113,7 @@ class CriarCobrancaService
         $cliente->telefone = $p['telefone'];
         $cliente->whatsapp = $p['telefone'];
         $cliente->contato = $p['telefone'];
+        $cliente->email = $p['email'] ?? null;
         if (isset($p['localidade'])) $cliente->localidade = $p['localidade'];
         $cliente->moeda = $p['moeda'] ?? 'BRL';
         $cliente->quantidade_membros = $p['quantidade_membros'] ?? 1;

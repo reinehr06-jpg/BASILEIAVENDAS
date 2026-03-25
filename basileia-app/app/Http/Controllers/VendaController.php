@@ -109,6 +109,7 @@ class VendaController extends Controller
             'quantidade_membros' => 'required|integer|min:1',
             'documento'          => 'required|string|max:20',
             'whatsapp'           => 'required|string|max:20',
+            'email_cliente'      => 'required|email|max:255',
             'plano'              => 'required|string',
             'forma_pagamento'    => 'required|in:PIX,BOLETO,CREDIT_CARD',
             'tipo_negociacao'    => 'required|in:mensal,anual',
@@ -167,6 +168,7 @@ class VendaController extends Controller
                     'quantidade_membros'  => $request->quantidade_membros,
                     'whatsapp'            => $request->whatsapp,
                     'contato'             => $request->whatsapp,
+                    'email'               => $request->email_cliente,
                 ]
             );
 
