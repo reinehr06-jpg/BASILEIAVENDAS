@@ -21,12 +21,10 @@ class VendaController extends Controller
     // Planos Disponíveis (Configuração central)
     // ==========================================
     private static $planos = [
-        ['nome' => 'Base',    'min_membros' => 1,    'max_membros' => 50,   'valor_mensal' => 97.00,   'valor_anual' => 970.00],
-        ['nome' => 'Start',   'min_membros' => 51,   'max_membros' => 100,  'valor_mensal' => 147.00,  'valor_anual' => 1470.00],
-        ['nome' => 'Basic',   'min_membros' => 101,  'max_membros' => 200,  'valor_mensal' => 197.00,  'valor_anual' => 1970.00],
-        ['nome' => 'Core',    'min_membros' => 201,  'max_membros' => 500,  'valor_mensal' => 297.00,  'valor_anual' => 2970.00],
-        ['nome' => 'Pro',     'min_membros' => 501,  'max_membros' => 1000, 'valor_mensal' => 497.00,  'valor_anual' => 4970.00],
-        ['nome' => 'Premium', 'min_membros' => 1001, 'max_membros' => 99999,'valor_mensal' => 797.00,  'valor_anual' => 7970.00],
+        ['nome' => 'Start',       'min_membros' => 1,    'max_membros' => 100,  'valor_mensal' => 197.00,  'valor_anual' => 1544.52, 'desconto_anual' => 34.5],
+        ['nome' => 'Basic',       'min_membros' => 101,  'max_membros' => 300,  'valor_mensal' => 297.00,  'valor_anual' => 2751.72, 'desconto_anual' => 22.9],
+        ['nome' => 'Plus',        'min_membros' => 301,  'max_membros' => 500,  'valor_mensal' => 397.00,  'valor_anual' => 3948.12, 'desconto_anual' => 17.1],
+        ['nome' => 'Performance', 'min_membros' => 501,  'max_membros' => 99999,'valor_mensal' => 0,        'valor_anual' => 0,       'desconto_anual' => 0,    'consulte' => true],
     ];
 
     private const MAX_DESCONTO = 15.00; // Desconto máximo permitido em %
@@ -156,6 +154,11 @@ class VendaController extends Controller
         $planoSelecionado = collect(self::$planos)->firstWhere('nome', $request->plano);
         if (!$planoSelecionado) {
             return back()->withErrors(['plano' => 'Plano selecionado inválido.'])->withInput();
+        }
+
+        // Plano Performance requer contato com especialista
+        if (!empty($planoSelecionado['consulte'])) {
+            return back()->withErrors(['plano' => 'O plano Performance requer contato com um especialista. Não é possível gerar cobrança automática.'])->withInput();
         }
 
         $valorBase = $request->tipo_negociacao === 'anual'
@@ -301,8 +304,20 @@ class VendaController extends Controller
     public function buscarPlanos(Request $request)
     {
         $membros = intval($request->query('membros', 0));
-        $planosCompativeis = collect(self::$planos)->filter(function ($p) use ($membros) {
-            return $membros >= $p['min_membros'] && $membros <= $p['max_membros'];
+        
+        // Encontra o plano ideal (onde membros se encaixa)
+        $planoIdeal = null;
+        foreach (self::$planos as $p) {
+            if ($membros >= $p['min_membros'] && $membros <= $p['max_membros']) {
+                $planoIdeal = $p;
+                break;
+            }
+        }
+
+        // Retorna o plano ideal + todos os planos mais premium (acima dele)
+        $planosCompativeis = collect(self::$planos)->filter(function ($p) use ($planoIdeal) {
+            if (!$planoIdeal) return true;
+            return $p['min_membros'] >= $planoIdeal['min_membros'];
         })->values();
 
         return response()->json($planosCompativeis);

@@ -159,7 +159,7 @@
 
         <!-- Grid de Planos Dinâmico -->
         <div class="form-group">
-            <label>Plano Sugerido <span class="required">*</span></label>
+            <label>Selecione o Plano <span class="required">*</span></label>
             <input type="hidden" name="plano" id="inputPlano" value="{{ old('plano') }}">
             <div class="planos-grid" id="planosGrid">
                 @foreach($planos as $p)
@@ -168,16 +168,31 @@
                      data-min="{{ $p['min_membros'] }}"
                      data-max="{{ $p['max_membros'] }}"
                      data-mensal="{{ $p['valor_mensal'] }}"
-                     data-anual="{{ $p['valor_anual'] }}">
-                    <div class="plano-name">{{ $p['nome'] }}</div>
-                    <div class="plano-range">{{ $p['min_membros'] }} - {{ $p['max_membros'] == 99999 ? '∞' : $p['max_membros'] }} membros</div>
-                    <div class="plano-price" data-mensal="{{ $p['valor_mensal'] }}" data-anual="{{ $p['valor_anual'] }}">
-                        R$ {{ number_format($p['valor_mensal'], 2, ',', '.') }}
+                     data-anual="{{ $p['valor_anual'] }}"
+                     data-consulte="{{ $p['consulte'] ?? false ? '1' : '0' }}">
+                    <div class="plano-name">Basiléia {{ $p['nome'] }}</div>
+                    <div class="plano-range">
+                        @if($p['max_membros'] == 99999)
+                            Acima de {{ $p['min_membros'] - 1 }} membros
+                        @else
+                            Até {{ $p['max_membros'] }} membros
+                        @endif
                     </div>
-                    <div class="plano-price-label">por mês</div>
+                    @if(!empty($p['consulte']))
+                        <div class="plano-price" style="font-size: 0.9rem; color: var(--primary);">
+                            Consulte condições
+                        </div>
+                        <div class="plano-price-label">fale com um especialista</div>
+                    @else
+                        <div class="plano-price" data-mensal="{{ $p['valor_mensal'] }}" data-anual="{{ $p['valor_anual'] }}">
+                            R$ {{ number_format($p['valor_mensal'], 2, ',', '.') }}
+                        </div>
+                        <div class="plano-price-label">por mês</div>
+                    @endif
                 </div>
                 @endforeach
             </div>
+            <div class="field-hint" style="margin-top: 8px;">O plano ideal é selecionado automaticamente. Você pode escolher um plano mais premium se necessário.</div>
             @error('plano') <div class="field-error">{{ $message }}</div> @enderror
         </div>
 
@@ -255,22 +270,48 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Atualizar planos compatíveis quando membros mudam
+    // Regra: plano ideal + planos mais premium (acima) ficam habilitados
+    // Planos abaixo do ideal ficam desabilitados
     inputMembros.addEventListener('input', function() {
         const membros = parseInt(this.value) || 0;
-        let planoAutoSelecionado = false;
 
-        cards.forEach(card => {
+        // Encontrar o plano ideal (onde membros se encaixa)
+        let planoIdealIndex = -1;
+        cards.forEach((card, index) => {
             const min = parseInt(card.dataset.min);
             const max = parseInt(card.dataset.max);
-            if (membros >= min && membros <= max) {
+            if (membros >= min && membros <= max && planoIdealIndex === -1) {
+                planoIdealIndex = index;
+            }
+        });
+
+        // Se não encontrou plano ideal, verificar se é acima do último
+        if (planoIdealIndex === -1 && membros > 0) {
+            // Acima do maior plano → habilitar apenas o último (Performance)
+            planoIdealIndex = cards.length - 1;
+        }
+
+        let planoAutoSelecionado = false;
+        cards.forEach((card, index) => {
+            if (planoIdealIndex === -1) {
+                // Sem membros, desabilitar todos
+                card.classList.add('disabled');
+                card.classList.remove('selected');
+                return;
+            }
+
+            // Habilitar o plano ideal e todos acima (mais premium)
+            if (index >= planoIdealIndex) {
                 card.classList.remove('disabled');
                 if (!planoAutoSelecionado) {
+                    // Auto-selecionar o plano ideal (o primeiro habilitado)
                     cards.forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
                     inputPlano.value = card.dataset.nome;
                     planoAutoSelecionado = true;
                 }
             } else {
+                // Desabilitar planos abaixo do ideal
                 card.classList.add('disabled');
                 card.classList.remove('selected');
             }
@@ -314,6 +355,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const isConsulte = selected.dataset.consulte === '1';
+        if (isConsulte) {
+            valorResumo.style.display = 'flex';
+            valorFinal.textContent = 'Consulte';
+            resumoDetalhes.textContent = `Plano Basiléia ${selected.dataset.nome} — Fale com um especialista`;
+            return;
+        }
+
         const tipo = selectTipo.value;
         const base = tipo === 'anual' ? parseFloat(selected.dataset.anual) : parseFloat(selected.dataset.mensal);
         const desconto = parseFloat(inputDesconto.value) || 0;
@@ -322,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         valorResumo.style.display = 'flex';
         valorFinal.textContent = 'R$ ' + final_.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-        let detalhes = `Plano ${selected.dataset.nome} (${tipo})`;
+        let detalhes = `Plano Basiléia ${selected.dataset.nome} (${tipo})`;
         if (desconto > 0) {
             detalhes += ` • ${desconto}% de desconto aplicado`;
         }
