@@ -8,6 +8,7 @@ use App\Models\LogEvento;
 use App\Mail\VendaConfirmadaMail;
 use App\Mail\ClienteConfirmacaoMail;
 use App\Services\ClienteStatusService;
+use App\Models\Comissao;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Services\AsaasService;
@@ -116,6 +117,26 @@ class PagamentoService
                     
                     $venda->comissao_gerada = $comissao;
                     $venda->valor_comissao  = $comissao;
+
+                    // Criar registro na tabela comissoes
+                    $jaExisteComissao = Comissao::where('venda_id', $venda->id)
+                        ->where('vendedor_id', $vendedor->id)
+                        ->exists();
+
+                    if (!$jaExisteComissao) {
+                        Comissao::create([
+                            'vendedor_id' => $vendedor->id,
+                            'cliente_id' => $venda->cliente_id,
+                            'venda_id' => $venda->id,
+                            'tipo_comissao' => 'inicial',
+                            'percentual_aplicado' => $percentual,
+                            'valor_venda' => $pagamento->valor,
+                            'valor_comissao' => $comissao,
+                            'status' => 'confirmada',
+                            'data_pagamento' => $pagamento->data_pagamento ?? now(),
+                            'competencia' => now()->format('Y-m'),
+                        ]);
+                    }
                 }
             }
             

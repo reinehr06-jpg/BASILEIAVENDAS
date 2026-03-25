@@ -18,4 +18,9 @@ class Vendedor extends Model
     {
         return $this->hasMany(Venda::class);
     }
+
+    public function comissoes()
+    {
+        return $this->hasMany(Comissao::class);
+    }
 }

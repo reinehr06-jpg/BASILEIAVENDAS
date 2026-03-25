@@ -11,6 +11,7 @@ use App\Http\Controllers\PagamentoBoletoController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\MetaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ComissaoController;
 use App\Http\Controllers\Master\IntegracaoController;
 use App\Http\Middleware\CheckMaster;
 use App\Http\Middleware\CheckVendedor;
@@ -78,7 +79,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes');
         Route::get('/clientes/{id}', [ClienteController::class, 'show'])->name('clientes.show');
         Route::patch('/clientes/{id}/status', [ClienteController::class, 'updateStatus'])->name('clientes.updateStatus');
-        
+
+        Route::get('/comissoes', [ComissaoController::class, 'indexMaster'])->name('comissoes');
+        Route::get('/comissoes/exportar', [ComissaoController::class, 'exportar'])->name('comissoes.exportar');
+        Route::prefix('api/comissoes')->name('comissoes.api.')->group(function () {
+            Route::get('/', [ComissaoController::class, 'apiListar'])->name('index');
+            Route::get('/resumo', [ComissaoController::class, 'apiResumo'])->name('resumo');
+        });
+
         Route::get('/configuracoes', [MasterPanelController::class, 'configuracoes'])->name('configuracoes');
         
         // Configurações de Integrações (Asaas)
@@ -103,7 +111,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/pagamentos', [PagamentoController::class, 'indexVendedor'])->name('pagamentos');
         Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes');
         Route::get('/clientes/{id}', [ClienteController::class, 'show'])->name('clientes.show');
-        Route::get('/comissao', function() { return view('placeholder', ['titulo' => 'Extrato de Comissões']); })->name('comissao');
+        Route::get('/comissoes', [ComissaoController::class, 'index'])->name('comissoes');
+        Route::get('/comissoes/exportar', [ComissaoController::class, 'exportar'])->name('comissoes.exportar');
+        Route::get('/comissao', function() { return redirect()->route('vendedor.comissoes'); })->name('comissao');
     });
 
 });
