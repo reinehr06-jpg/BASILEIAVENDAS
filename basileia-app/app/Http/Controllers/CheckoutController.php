@@ -19,6 +19,17 @@ class CheckoutController extends Controller
 
         $restritoMetodo = $request->get('method');
 
+        // Se não houver restrição na URL, verifica se o vendedor já travou o método no banco
+        if (!$restritoMetodo && !empty($venda->forma_pagamento)) {
+            $map = [
+                'CREDIT_CARD' => 'credit_card',
+                'PIX'         => 'pix',
+                'BOLETO'      => 'boleto',
+                'cartao'      => 'credit_card'
+            ];
+            $restritoMetodo = $map[$venda->forma_pagamento] ?? strtolower($venda->forma_pagamento);
+        }
+
         Log::info("Checkout acessado: Hash {$hash} | Venda ID: {$venda->id} | Restrito: {$restritoMetodo}");
 
         return view('checkout.index', compact('venda', 'restritoMetodo'));

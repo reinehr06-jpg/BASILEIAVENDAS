@@ -1,26 +1,29 @@
 @extends('layouts.checkout')
 
-@section('title', 'Check-out Seguro - Basileia Vendas')
+@section('title', 'Finalizar Registro - Basileia Vendas')
 
 @section('content')
-<div class="checkout-main-grid">
-    <!-- Coluna Esquerda: O Plano e Valor -->
-    <div class="checkout-side-sum">
-        <div class="sum-content">
-            <span class="badge badge-primary-light mb-2">Assinatura Digital</span>
-            <h2 class="font-weight-800 mb-0">
+<div class="checkout-enterprise-grid">
+    <!-- Coluna Esquerda: O Plano e Valor (Foco em Valor Percebido) -->
+    <div class="checkout-left-area">
+        <div class="content-left-padding">
+            <span class="badge-premium mb-3">PLANO PROFISSIONAL ATIVADO</span>
+            <h1 class="plan-title-main">
                 {{ match($venda->tipo_negociacao ?? ($venda->plano ?? 'mensal')) {
                     'mensal'       => 'Plano Mensal',
                     'anual'        => 'Plano Anual Premium',
                     'anual_avista' => 'Plano Anual à Vista',
-                    'anual_12x'    => 'Anual - 12 prestações',
+                    'anual_12x'    => 'Anual em 12 Parcelas',
                     default        => 'Assinatura Basileia'
                 } }}
-            </h2>
+            </h1>
             
-            <div class="display-value my-4 text-primary">
-                R$ {{ number_format($venda->valor, 2, ',', '.') }}
-                <small class="text-muted d-block mt-n2" style="font-size: 0.8rem; font-weight: 600;">{{ ($venda->tipo_negociacao ?? '') === 'mensal' ? 'COBRANÇA MENSAL' : 'COBRANÇA ANUAL' }}</small>
+            <div class="price-container-main my-4">
+                <span class="currency-tag">R$</span>
+                <span class="price-big">{{ number_format($venda->valor, 2, ',', '.') }}</span>
+                <div class="billing-cycle-info text-uppercase">
+                   <i class="fas fa-sync-alt mr-1"></i> Cobrança {{ ($venda->tipo_negociacao ?? '') === 'mensal' ? 'Mensal' : 'Anual' }}
+                </div>
             </div>
 
             @php
@@ -28,49 +31,49 @@
             @endphp
             
             @if($isAnual)
-            <div class="promo-box mb-4">
-                <i class="fas fa-gift mr-2"></i> Você economizou no Plano Anual!
+            <div class="promo-seal mb-4 animate-up">
+                <i class="fas fa-sparkles mr-1"></i> Economia Exclusiva de Plano Anual
             </div>
             @endif
 
-            <ul class="premium-benefits mt-4">
-                <li class="p-benefit">
-                    <i class="fas fa-check"></i>
-                    <div>
-                        <strong>Gestão com IA Integrada</strong>
-                        <p class="small text-muted mb-0">Assistente para membros e solicitações.</p>
+            <ul class="feature-checklist-premium">
+                <li class="f-item">
+                    <div class="f-icon-circle"><i class="fas fa-check"></i></div>
+                    <div class="f-text-group">
+                        <strong class="f-title">Gestão com IA Integrada</strong>
+                        <p class="f-desc">IA aplicada para auxílio de solicitações da igreja.</p>
                     </div>
                 </li>
-                <li class="p-benefit">
-                    <i class="fas fa-check"></i>
-                    <div>
-                        <strong>Automação de Cultos</strong>
-                        <p class="small text-muted mb-0">Lembretes e avisos 100% automáticos.</p>
+                <li class="f-item">
+                    <div class="f-icon-circle"><i class="fas fa-check"></i></div>
+                    <div class="f-text-group">
+                        <strong class="f-title">Automação de Cultos</strong>
+                        <p class="f-desc">Lembretes e avisos 100% automáticos.</p>
                     </div>
                 </li>
-                <li class="p-benefit">
-                    <i class="fas fa-check"></i>
-                    <div>
-                        <strong>Células e Eventos</strong>
-                        <p class="small text-muted mb-0">Controle total de presença e cursos.</p>
+                <li class="f-item">
+                    <div class="f-icon-circle"><i class="fas fa-check"></i></div>
+                    <div class="f-text-group">
+                        <strong class="f-title">Células e Eventos</strong>
+                        <p class="f-desc">Controle total de presença, cursos e células.</p>
                     </div>
                 </li>
             </ul>
 
-            <div class="security-stamp mt-5 pt-3 d-none d-lg-flex">
-                <i class="fas fa-shield-check fa-2x text-success mr-3"></i>
-                <div>
-                    <span class="d-block font-weight-bold small text-dark">Ambiente Seguro</span>
-                    <span class="small text-muted">Proteção de dados SSL 256 bits</span>
+            <div class="safe-seal-footer mt-auto pt-4 border-top">
+                <div class="d-flex align-items-center mb-1">
+                    <i class="fas fa-shield-check text-success fa-lg mr-2"></i>
+                    <strong class="small text-dark font-weight-800">Criptografia Segura (SSL)</strong>
                 </div>
+                <p class="small text-muted mb-0">Seus dados estão protegidos sob os mais altos padrões de segurança bancária.</p>
             </div>
         </div>
     </div>
 
-    <!-- Coluna Direita: Pagamento -->
-    <div class="checkout-side-pay">
-        <div class="pay-content">
-            <h5 class="font-weight-800 text-dark mb-4">Forma de Pagamento</h5>
+    <!-- Coluna Direita: O Pagamento (Foco em Conversão) -->
+    <div class="checkout-right-area">
+        <div class="content-right-padding">
+            <h3 class="payment-header-title">Pagamento Seguro</h3>
             
             <form action="{{ route('checkout.process', $venda->checkout_hash) }}" method="POST" id="checkout-form">
                 @csrf
@@ -79,80 +82,85 @@
                     $metodoAtual = old('payment_method', $restritoMetodo ?? 'credit_card');
                 @endphp
 
+                {{-- Só exibe as abas se não houver restrição --}}
                 @if(!isset($restritoMetodo))
-                <div class="payment-tabs mb-4">
-                    <label class="tab-item {{ $metodoAtual === 'credit_card' ? 'active' : '' }}" onclick="updateMethod('credit_card', this)">
+                <div class="payment-method-selector mb-4">
+                    <label class="p-item {{ $metodoAtual === 'credit_card' ? 'active' : '' }}" onclick="switchMode('credit_card', this)">
                         <input type="radio" name="payment_method" value="credit_card" {{ $metodoAtual === 'credit_card' ? 'checked' : '' }}>
                         <i class="fas fa-credit-card"></i> Cartão
                     </label>
-                    <label class="tab-item {{ $metodoAtual === 'pix' ? 'active' : '' }}" onclick="updateMethod('pix', this)">
+                    <label class="p-item {{ $metodoAtual === 'pix' ? 'active' : '' }}" onclick="switchMode('pix', this)">
                         <input type="radio" name="payment_method" value="pix" {{ $metodoAtual === 'pix' ? 'checked' : '' }}>
                         <i class="fas fa-bolt"></i> PIX
                     </label>
-                    <label class="tab-item {{ $metodoAtual === 'boleto' ? 'active' : '' }}" onclick="updateMethod('boleto', this)">
+                    <label class="p-item {{ $metodoAtual === 'boleto' ? 'active' : '' }}" onclick="switchMode('boleto', this)">
                         <input type="radio" name="payment_method" value="boleto" {{ $metodoAtual === 'boleto' ? 'checked' : '' }}>
                         <i class="fas fa-barcode"></i> Boleto
                     </label>
                 </div>
                 @else
                     <input type="hidden" name="payment_method" value="{{ $restritoMetodo }}">
-                    <div class="restrito-pill mb-4">
-                        <span class="text-uppercase small font-weight-bold">Pagando via:</span>
-                        <span class="text-primary ml-1">
+                    <div class="method-locked-pill mb-4 d-flex justify-content-between align-items-center">
+                        <span class="small font-weight-800 text-muted text-uppercase">Pagamento via:</span>
+                        <span class="btn-sm btn-outline-primary border-0 rounded-pill px-3 py-1 font-weight-800" style="background: rgba(76, 29, 149, 0.05);">
                             <i class="fas fa-{{ $restritoMetodo === 'credit_card' ? 'credit-card' : ($restritoMetodo === 'pix' ? 'bolt' : 'barcode') }} mr-1"></i>
-                            <strong>{{ $restritoMetodo === 'credit_card' ? 'CARTÃO DE CRÉDITO' : ($restritoMetodo === 'pix' ? 'PIX INSTANTÂNEO' : 'BOLETO BANCÁRIO') }}</strong>
+                            {{ $restritoMetodo === 'credit_card' ? 'CARTÃO DE CRÉDITO' : ($restritoMetodo === 'pix' ? 'PIX INSTANTÂNEO' : 'BOLETO BANCÁRIO') }}
                         </span>
                     </div>
                 @endif
 
-                <div class="form-wrapper-premium">
-                    <div class="form-group mb-3">
-                        <label class="sum-label">Seu E-mail comercial</label>
-                        <input type="email" class="form-control-minimal" value="{{ $venda->email_cliente ?? ($venda->cliente->email ?? '') }}" readonly>
+                <div class="form-body-enterprise">
+                    <div class="form-group-enterprise">
+                        <label>E-mail de acesso ao painel</label>
+                        <input type="email" class="form-control-enterprise bg-light" value="{{ $venda->email_cliente ?? ($venda->cliente->email ?? '') }}" readonly>
+                        <p class="small text-muted mt-1">Este e-mail receberá suas credenciais de login.</p>
                     </div>
 
                     {{-- Seção: Cartão --}}
-                    <div id="box-card" style="{{ $metodoAtual === 'credit_card' ? 'display:block' : 'display:none' }}">
-                        <div class="form-group mb-3">
-                            <label class="sum-label">Número do Cartão de Crédito</label>
-                            <input type="text" name="numero_cartao" class="form-control-minimal" placeholder="0000 0000 0000 0000" oninput="formatarCard(this)">
+                    <div id="section-card" style="{{ $metodoAtual === 'credit_card' ? 'display:block' : 'display:none' }}">
+                        <div class="form-group-enterprise">
+                            <label>Número do Cartão</label>
+                            <div class="input-with-icon">
+                                <input type="text" name="numero_cartao" class="form-control-enterprise" placeholder="0000 0000 0000 0000" oninput="formatCard(this)">
+                                <i class="fas fa-credit-card icon-inside text-muted"></i>
+                            </div>
                         </div>
-                        <div class="row">
+                        <div class="form-row">
                             <div class="col-7">
-                                <div class="form-group mb-3">
-                                    <label class="sum-label">Validade (MM/AA)</label>
-                                    <input type="text" name="expiry" class="form-control-minimal" placeholder="MM/AA" oninput="formatarDate(this)">
+                                <div class="form-group-enterprise">
+                                    <label>Expiração (MM/AA)</label>
+                                    <input type="text" name="expiry" class="form-control-enterprise text-center" placeholder="MM / AA" oninput="formatExpiry(this)">
                                 </div>
                             </div>
                             <div class="col-5">
-                                <div class="form-group mb-3">
-                                    <label class="sum-label">CVC</label>
-                                    <input type="text" name="cvv" class="form-control-minimal" placeholder="123" maxlength="4">
+                                <div class="form-group-enterprise">
+                                    <label>CVC</label>
+                                    <input type="text" name="cvv" class="form-control-enterprise text-center" placeholder="123" maxlength="4">
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group mb-3">
-                            <label class="sum-label">Nome Completo (como no cartão)</label>
-                            <input type="text" name="nome_cartao" class="form-control-minimal" placeholder="NOME NO CARTÃO">
+                        <div class="form-group-enterprise">
+                            <label>Nome Completo (Escrito no Cartão)</label>
+                            <input type="text" name="nome_cartao" class="form-control-enterprise text-uppercase" placeholder="EX: FULANO DE TAL">
                         </div>
                     </div>
 
                     {{-- Informativo Pix/Boleto --}}
-                    <div id="box-info" style="{{ $metodoAtual === 'credit_card' ? 'display:none' : 'display:block' }}">
-                        <div class="info-alert mb-3">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span id="txt-pagamento">O QR Code / Boleto será gerado ao confirmar.</span>
+                    <div id="section-status" style="{{ $metodoAtual === 'credit_card' ? 'display:none' : 'display:block' }}">
+                        <div class="payment-info-box mb-4">
+                            <i class="fas fa-clock fa-lg mr-2 text-primary"></i>
+                            <span id="hint-text">Seu código para pagamento será gerado imediatamente.</span>
                         </div>
                     </div>
 
-                    <div class="form-group mb-4">
-                        <label class="sum-label">CPF ou CNPJ do Titular</label>
-                        <input type="text" name="cpf_titular" class="form-control-minimal" placeholder="000.000.000-00" oninput="formatarDoc(this)" required>
+                    <div class="form-group-enterprise">
+                        <label>Documento do Pagador (CPF ou CNPJ)</label>
+                        <input type="text" name="cpf_titular" class="form-control-enterprise" placeholder="000.000.000-00" oninput="formatDoc(this)" required>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-primary-elite" id="btn-finalizar">
-                    <i class="fas fa-lock mr-2"></i> Confirmar Pagamento de R$ {{ number_format($venda->valor, 2, ',', '.') }}
+                <button type="submit" class="btn-checkout-enterprise" id="btn-submit-main">
+                    Confirmar Assinatura - R$ {{ number_format($venda->valor, 2, ',', '.') }}
                 </button>
             </form>
         </div>
@@ -160,73 +168,82 @@
 </div>
 
 <style>
-    .checkout-main-grid { display: flex; flex-direction: row; min-height: 600px; }
-    .checkout-side-sum { width: 42%; background: #fbfbfc; padding: 50px 45px; border-right: 1px solid #f2f4f7; }
-    .checkout-side-pay { width: 58%; padding: 50px 55px; background: #fff; }
+    .checkout-enterprise-grid { display: flex; flex-direction: row; min-height: 650px; }
+    .checkout-left-area { width: 44%; background: #fdfdfe; padding: 60px 50px; border-right: 1px solid #f2f3f5; display: flex; flex-direction: column; }
+    .checkout-right-area { width: 56%; padding: 60px 70px; background: #fff; }
     
-    .font-weight-800 { font-weight: 800; }
-    .display-value { font-size: 2.6rem; font-weight: 800; letter-spacing: -2px; }
+    .badge-premium { display: inline-block; background: rgba(76, 29, 149, 0.06); color: var(--primary); font-size: 0.65rem; font-weight: 800; padding: 6px 14px; border-radius: 6px; letter-spacing: 1px; }
+    .plan-title-main { font-size: 2.25rem; font-weight: 800; color: #111827; letter-spacing: -1px; margin-top: 10px; }
     
-    .badge-primary-light { background: rgba(76, 29, 149, 0.08); color: var(--primary); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.5px; }
-    .promo-box { background: #f0fdf4; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 8px 15px; border-radius: 8px; border: 1px solid #dcfce7; }
+    .price-container-main { display: flex; align-items: baseline; gap: 4px; }
+    .currency-tag { font-size: 1.25rem; font-weight: 700; color: #6b7280; }
+    .price-big { font-size: 3.5rem; font-weight: 900; letter-spacing: -3px; color: #4C1D95; line-height: 1; }
+    .billing-cycle-info { display: block; font-size: 0.75rem; font-weight: 800; color: #9ca3af; letter-spacing: 0.5px; margin-top: 8px; }
+
+    .promo-seal { display: inline-block; background: #ecfdf5; color: #065f46; font-size: 0.8rem; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 1.5px solid #d1fae5; }
     
-    .premium-benefits { list-style: none; padding: 0; }
-    .p-benefit { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
-    .p-benefit i { color: #10b981; font-size: 0.9rem; margin-top: 5px; }
-    .p-benefit strong { font-size: 0.9rem; color: #111827; display: block; }
-    .p-benefit p { font-size: 0.825rem; line-height: 1.4; }
+    .feature-checklist-premium { list-style: none; padding: 0; margin: 0; }
+    .f-item { display: flex; gap: 16px; margin-bottom: 25px; align-items: flex-start; }
+    .f-icon-circle { width: 22px; height: 22px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; margin-top: 3px; }
+    .f-title { display: block; font-size: 0.95rem; font-weight: 800; color: #111827; line-height: 1.2; }
+    .f-desc { font-size: 0.85rem; color: #6b7280; line-height: 1.4; margin-top: 2px; }
 
-    .payment-tabs { display: flex; background: #f4f5f7; padding: 5px; border-radius: 12px; gap: 4px; }
-    .tab-item { flex: 1; text-align: center; padding: 10px 0; font-size: 0.75rem; font-weight: 800; color: #6b7280; border-radius: 9px; cursor: pointer; transition: all 0.2s; margin-bottom: 0; text-transform: uppercase; }
-    .tab-item.active { background: #fff; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-    .tab-item i { margin-right: 6px; font-size: 0.9rem; }
-    .tab-item input { display: none; }
+    .payment-header-title { font-size: 1.5rem; font-weight: 800; color: #111827; letter-spacing: -0.5px; }
 
-    .restrito-pill { background: #f8f9fa; border: 1px solid #edf0f5; padding: 10px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .payment-method-selector { display: flex; background: #f3f4f6; padding: 5px; border-radius: 14px; gap: 5px; }
+    .p-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.8rem; font-weight: 800; color: #6b7280; border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .p-item.active { background: #fff; color: var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    .p-item i { margin-right: 6px; font-size: 0.95rem; }
+    .p-item input { display: none; }
 
-    .sum-label { display: block; font-size: 0.725rem; font-weight: 800; color: #4b5563; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .form-control-minimal { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 11px 16px; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; background: #fff; }
-    .form-control-minimal:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(76, 29, 149, 0.1); outline: none; }
+    .form-group-enterprise { margin-bottom: 22px; }
+    .form-group-enterprise label { display: block; font-size: 0.75rem; font-weight: 800; color: #4b5563; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control-enterprise { width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; font-size: 1rem; font-weight: 500; transition: all 0.3s; background: #fff; }
+    .form-control-enterprise:focus { border-color: var(--primary); box-shadow: 0 0 0 5px rgba(76, 29, 149, 0.08); outline: none; }
+    
+    .input-with-icon { position: relative; }
+    .icon-inside { position: absolute; right: 15px; top: 16px; font-size: 1.15rem; }
 
-    .info-alert { background: #f0f7ff; color: #1e40af; font-size: 0.85rem; font-weight: 600; padding: 12px 18px; border-radius: 10px; border: 1px solid #dbeafe; }
+    .payment-info-box { background: rgba(76, 29, 149, 0.04); color: var(--primary); font-size: 0.9rem; font-weight: 700; padding: 15px 20px; border-radius: 12px; border: 1.5px solid rgba(76, 29, 149, 0.08); display: flex; align-items: center; }
 
-    .btn-primary-elite { background: var(--primary-gradient); color: white; border: none; width: 100%; padding: 18px; border-radius: 14px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(76, 29, 149, 0.25); transition: all 0.25s; cursor: pointer; }
-    .btn-primary-elite:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(76, 29, 149, 0.35); }
+    .btn-checkout-enterprise { background: var(--primary-gradient); color: white; border: none; width: 100%; padding: 20px; border-radius: 16px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 15px 40px rgba(76, 29, 149, 0.3); transition: all 0.3s; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-checkout-enterprise:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(76, 29, 149, 0.4); }
 
-    @media (max-width: 900px) {
-        .checkout-main-grid { flex-direction: column; }
-        .checkout-side-sum, .checkout-side-pay { width: 100%; border: none; }
-        .checkout-side-sum { order: 2; padding: 35px; }
-        .checkout-side-pay { order: 1; padding: 35px; }
+    @media (max-width: 992px) {
+        .checkout-enterprise-grid { flex-direction: column; }
+        .checkout-left-area, .checkout-right-area { width: 100%; border: none; padding: 40px 25px; }
+        .checkout-left-area { order: 2; border-top: 1px solid #f2f3f5; }
+        .checkout-right-area { order: 1; }
+        .price-big { font-size: 3rem; }
     }
 </style>
 
 <script>
-function updateMethod(metodo, element) {
-    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+function switchMode(metodo, element) {
+    document.querySelectorAll('.p-item').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
     
-    document.getElementById('box-card').style.display = metodo === 'credit_card' ? 'block' : 'none';
-    document.getElementById('box-info').style.display = metodo === 'credit_card' ? 'none' : 'block';
+    document.getElementById('section-card').style.display = metodo === 'credit_card' ? 'block' : 'none';
+    document.getElementById('section-status').style.display = metodo === 'credit_card' ? 'none' : 'block';
     
-    const txt = document.getElementById('txt-pagamento');
-    const btn = document.getElementById('btn-finalizar');
+    const hint = document.getElementById('hint-text');
+    const btn = document.getElementById('btn-submit-main');
     const valor = "R$ {{ number_format($venda->valor, 2, ',', '.') }}";
     
     if (metodo === 'pix') {
-        txt.innerText = "Um QR Code Pix será gerado para o seu pagamento seguro.";
-        btn.innerHTML = '<i class="fas fa-bolt mr-2"></i> Gerar QR Code PIX ' + valor;
+        hint.innerText = "Um QR Code Pix dinâmico será gerado para liberação instantânea.";
+        btn.innerHTML = '<i class="fas fa-bolt mr-2 text-warning"></i> Gerar QR Code PIX - ' + valor;
     } else if (metodo === 'boleto') {
-        txt.innerText = "O boleto bancário será gerado e poderá ser pago em qualquer banco.";
-        btn.innerHTML = '<i class="fas fa-barcode mr-2"></i> Gerar Boleto de ' + valor;
+        hint.innerText = "Um boleto bancário será gerado e enviado para o seu e-mail.";
+        btn.innerHTML = '<i class="fas fa-barcode mr-2"></i> Gerar Boleto Bancário - ' + valor;
     } else {
-        btn.innerHTML = '<i class="fas fa-lock mr-2"></i> Confirmar Pagamento de ' + valor;
+        btn.innerHTML = 'Confirmar Assinatura - ' + valor;
     }
 }
 
-function formatarCard(input) { let v = input.value.replace(/\D/g, '').substring(0, 16); input.value = v.replace(/(.{4})/g, '$1 ').trim(); }
-function formatarDate(input) { let v = input.value.replace(/\D/g, '').substring(0, 4); if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2); input.value = v; }
-function formatarDoc(input) {
+function formatCard(input) { let v = input.value.replace(/\D/g, '').substring(0, 16); input.value = v.replace(/(.{4})/g, '$1 ').trim(); }
+function formatExpiry(input) { let v = input.value.replace(/\D/g, '').substring(0, 4); if (v.length > 2) v = v.substring(0, 2) + ' / ' + v.substring(2); input.value = v; }
+function formatDoc(input) {
     let v = input.value.replace(/\D/g, '');
     if (v.length <= 11) { v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); }
     else { v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'); }
@@ -234,9 +251,10 @@ function formatarDoc(input) {
 }
 
 document.getElementById('checkout-form').addEventListener('submit', function() {
-    const btn = document.getElementById('btn-finalizar');
+    const btn = document.getElementById('btn-submit-main');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESSANDO PAGAMENTO...';
+    btn.style.opacity = '0.8';
+    btn.innerHTML = '<i class="fas fa-sync fa-spin mr-2"></i> PROCESSANDO TRANSAÇÃO SEGURA...';
 });
 </script>
 @endsection
