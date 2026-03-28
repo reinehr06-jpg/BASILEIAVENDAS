@@ -1,68 +1,52 @@
 <?php
 
 /**
- * Script de Diagnóstico Rápido para Basileia Vendas na AWS
- * Este script verifica as dependências do Laravel e reporta erros de boot.
+ * Script de Diagnóstico Rápido RESILIENTE para Basileia Vendas na AWS
  */
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 echo "<h1>🔍 Diagnóstico Basileia Vendas (AWS)</h1>";
-echo "<pre>";
+echo "<h3>Se você vê esta mensagem, o PHP está funcionando corretamente.</h3><pre>";
 
-// 1. Verificar Versão do PHP
-echo "PHP Version: " . PHP_VERSION . " (Mínimo: 8.2 sugerido para Laravel 11/13)\n";
-if (version_compare(PHP_VERSION, '8.2', '<')) {
-    echo "❌ AVISO: Versão do PHP é inferior a 8.2\n";
-} else {
-    echo "✅ PHP Version OK\n";
-}
+// 1. PHP Info
+echo "PHP Version: " . PHP_VERSION . "\n";
+echo "OS: " . PHP_OS . "\n";
+echo "User: " . get_current_user() . "\n";
+echo "Doc Root: " . $_SERVER['DOCUMENT_ROOT'] . "\n\n";
 
-// 2. Verificar Extensões Críticas
+// 2. Extensões
 $extensions = ['bcmath', 'ctype', 'curl', 'dom', 'fileinfo', 'filter', 'hash', 'mbstring', 'openssl', 'pcre', 'pdo', 'session', 'tokenizer', 'xml', 'gd'];
 foreach ($extensions as $ext) {
-    if (!extension_loaded($ext)) {
-        echo "❌ Extensão FALTANDO: $ext\n";
-    } else {
-        echo "✅ Extensão OK: $ext\n";
-    }
+    echo (extension_loaded($ext) ? "✅" : "❌") . " Extensão: $ext\n";
 }
 
-// 3. Verificar Permissões de Pastas
+// 3. Pastas (Sem usar chmods complexos)
 $paths = [
-    '../storage' => 0775,
-    '../storage/logs' => 0775,
-    '../storage/framework' => 0775,
-    '../bootstrap/cache' => 0775,
+    '../storage' => 'storage',
+    '../storage/logs' => 'logs',
+    '../bootstrap/cache' => 'cache',
+    '../vendor' => 'vendor',
+    '../.env' => '.env'
 ];
 
-foreach ($paths as $path => $perm) {
-    if (!is_writable($path)) {
-        echo "❌ NÃO GRAVÁVEL: $path (Verifique permissões chmod)\n";
+foreach ($paths as $path => $label) {
+    if (file_exists($path)) {
+        echo "✅ Encontrado: $label (" . (is_writable($path) ? "GRAVÁVEL" : "NÃO-GRAVÁVEL") . ")\n";
     } else {
-        echo "✅ GRAVÁVEL: $path\n";
+        echo "❌ FALTANDO: $label (Caminho testado: " . realpath($path) . ")\n";
     }
 }
 
-// 4. Verificar arquivo .env
-if (!file_exists('../.env')) {
-    echo "❌ ARQUIVO .env NÃO ENCONTRADO na raiz do projeto!\n";
-} else {
-    echo "✅ .env encontrado\n";
-    $env = parse_ini_file('../.env');
-    if (empty($env['APP_KEY'])) {
-        echo "❌ APP_KEY está vazia no .env! Rode 'php artisan key:generate'\n";
-    } else {
-        echo "✅ APP_KEY configurada\n";
+// 4. Teste de boot básico do Laravel (Apenas se o vendor existir)
+if (file_exists('../vendor/autoload.php')) {
+    try {
+        require '../vendor/autoload.php';
+        echo "✅ Autoload do Composer carregado com sucesso!\n";
+    } catch (\Throwable $e) {
+        echo "❌ ERRO ao carregar o Autoload: " . $e->getMessage() . "\n";
     }
-}
-
-// 5. Tentar carregar o Autoload do Composer
-if (!file_exists('../vendor/autoload.php')) {
-    echo "❌ vendor/autoload.php NÃO ENCONTRADO! Rode 'composer install' no servidor.\n";
-} else {
-    echo "✅ Autoload do Composer OK\n";
 }
 
 echo "\n--- FIM DO DIAGNÓSTICO ---\n";
