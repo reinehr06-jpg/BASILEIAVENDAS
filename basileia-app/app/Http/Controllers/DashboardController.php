@@ -110,7 +110,10 @@ class DashboardController extends Controller
         $renovacoesMes = $queryRenov->count();
 
         // Gráfico Semanal
-        $queryGrafico = Pagamento::selectRaw("strftime('%W', pagamentos.updated_at) as semana, sum(pagamentos.valor) as total")
+        $driver = DB::getDriverName();
+        $weekFormat = $driver === 'pgsql' ? "TO_CHAR(pagamentos.updated_at, 'IW')" : "strftime('%W', pagamentos.updated_at)";
+        
+        $queryGrafico = Pagamento::selectRaw("$weekFormat as semana, sum(pagamentos.valor) as total")
             ->join('vendas', 'pagamentos.venda_id', '=', 'vendas.id')
             ->whereIn('pagamentos.status', ['RECEIVED', 'pago', 'PAGO', 'CONFIRMED'])
             ->whereNotIn(DB::raw('UPPER(vendas.status)'), ['ESTORNADO', 'CANCELADO', 'EXPIRADO'])
@@ -119,7 +122,9 @@ class DashboardController extends Controller
         $faturamentoSemanal = $queryGrafico->groupBy('semana')->orderBy('semana')->limit(4)->get();
 
         // Melhor faixa
-        $queryFaixa = Cobranca::selectRaw("strftime('%d', cobrancas.updated_at) as dia, count(*) as total")
+        $dayFormat = $driver === 'pgsql' ? "TO_CHAR(cobrancas.updated_at, 'DD')" : "strftime('%d', cobrancas.updated_at)";
+        
+        $queryFaixa = Cobranca::selectRaw("$dayFormat as dia, count(*) as total")
             ->join('vendas', 'cobrancas.venda_id', '=', 'vendas.id')
             ->where('cobrancas.status', 'RECEIVED');
         if ($vendedorIds) $queryFaixa->whereIn('vendas.vendedor_id', $vendedorIds);

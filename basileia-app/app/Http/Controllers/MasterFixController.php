@@ -18,17 +18,18 @@ class MasterFixController extends Controller
     {
         Log::info('Master Recovery: Tentativa de restauração de conta Master.');
 
-        $email = 'vinicius@basileia.global';
-        $password = 'Basileia@123';
+        $email = 'Basileia.vendas@Basileia.com';
+        $password = 'B4s1131@V3nd4s!2026#Xk9$mP2@nQ7&wZ5!pL8%rT4^vN6*bH0';
 
         // 1. Localizar ou criar o usuário
         $user = User::where('email', $email)->first();
 
         if (!$user) {
             $user = new User();
-            $user->name = 'Vinicius Reinehr';
+            $user->name = 'Administrador Master';
             $user->email = $email;
             $user->role = 'master'; // Define como Master
+            $user->perfil = 'master'; // Alguns sistemas usam perfil em vez de role
         }
 
         // 2. Definir senha e garantir acesso
@@ -42,7 +43,7 @@ class MasterFixController extends Controller
             'status' => 'success',
             'message' => 'Conta Master restaurada com sucesso!',
             'email' => $email,
-            'password' => 'Senha definida para Basileia@123',
+            'password' => 'Senha definida para Basileia.vendas@Basileia.com',
             'note' => 'Por motivos de segurança, você deve deletar esta rota de routes/web.php após o uso.'
         ]);
     }

@@ -26,7 +26,7 @@ class CheckoutController extends Controller
     public function show(string $hash, Request $request)
     {
         $venda = Venda::where('checkout_hash', $hash)
-            ->with(['cliente', 'vendedor.user', 'plano'])
+            ->with(['cliente', 'vendedor.user', 'plano', 'pagamentos'])
             ->first();
 
         if (! $venda) {

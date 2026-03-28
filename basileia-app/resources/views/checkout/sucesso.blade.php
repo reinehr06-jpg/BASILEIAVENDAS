@@ -303,6 +303,11 @@
                             <div class="step-number">1</div>
                             <div class="step-content">{{ __('checkout.step_boleto_pending') }}</div>
                         </div>
+                        <div style="margin: 20px 0;">
+                            <a href="{{ $ultimoPagamento->bank_slip_url ?? $ultimoPagamento->invoice_url }}" target="_blank" class="btn-access" style="background: var(--success); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);">
+                                <i class="fas fa-download"></i> {{ __('checkout.download_boleto') ?? 'Baixar Boleto' }}
+                            </a>
+                        </div>
                     @endif
                     <div class="step-item">
                         <div class="step-number">2</div>

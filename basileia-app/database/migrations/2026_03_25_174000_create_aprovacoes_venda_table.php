@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('venda_id')->constrained('vendas')->onDelete('cascade');
             
             // Tipo de aprovação
-            $table->enum('tipo_aprovacao', ['DESCONTO', 'REPASSE', 'EXCECAO_COMERCIAL'])->default('DESCONTO');
+            $table->enum('tipo_aprovacao', ['DESCONTO', 'REPASSE', 'EXCECAO_COMERCIAL', 'VALOR_PERFORMANCE'])->default('DESCONTO');
             
             // Valores
             $table->decimal('percentual_solicitado', 10, 2);

@@ -728,13 +728,51 @@
                     <i class="fas fa-circle-info"></i>
                     {{ __('checkout.currency_info', ['currency' => $currency, 'symbol' => $currencyInfo['symbol']]) }}
                 </div>
-                <!-- Payment Tabs Pill (Only Card now) -->
-                <div class="payment-pill-group" style="grid-template-columns: 1fr;">
-                    <div class="payment-pill active" id="tab-cartao">
+                <!-- Payment Tabs Pill -->
+                <div class="payment-pill-group" id="payment-pill-group" style="grid-template-columns: 1fr;">
+                    <div class="payment-pill active" id="tab-cartao" onclick="selectPaymentMethod('cartao')">
                         <i class="fas fa-credit-card"></i>
                         <span>{{ __('checkout.card') }}</span>
                     </div>
                 </div>
+
+                @php
+                    $ultimoPagamento = $venda->pagamentos->where('status', 'pendente')->last() ?? $venda->pagamentos->last();
+                @endphp
+
+                @if($ultimoPagamento && in_array($ultimoPagamento->forma_pagamento, ['boleto', 'pix']))
+                    <div style="background: white; border-radius: var(--radius); padding: 24px; border: 2px solid var(--primary); margin-bottom: 32px; box-shadow: var(--shadow-md);">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                            <div style="width: 48px; height: 48px; background: var(--primary-light); color: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                <i class="fas {{ $ultimoPagamento->forma_pagamento === 'boleto' ? 'fa-barcode' : 'fa-qrcode' }}"></i>
+                            </div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--slate-900);">Pagamento Disponível!</h3>
+                                <p style="font-size: 0.85rem; color: var(--slate-500);">Seu pedido já possui uma cobrança ativa.</p>
+                            </div>
+                        </div>
+
+                        @if($ultimoPagamento->forma_pagamento === 'boleto')
+                            <div style="text-align: center; padding: 20px; background: var(--slate-50); border-radius: 12px; border: 1px dashed var(--slate-200);">
+                                <p style="font-size: 0.9rem; color: var(--slate-600); margin-bottom: 16px;">Clique no botão abaixo para baixar seu boleto.</p>
+                                <a href="{{ $ultimoPagamento->bank_slip_url ?? $ultimoPagamento->invoice_url }}" target="_blank" class="btn-enterprise" style="max-width: 300px; margin: 0 auto; background: var(--success); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);">
+                                    <i class="fas fa-download"></i> Baixar Boleto
+                                </a>
+                            </div>
+                        @else
+                            <div style="text-align: center; padding: 20px; background: var(--slate-50); border-radius: 12px; border: 1px dashed var(--slate-200);">
+                                <p style="font-size: 0.9rem; color: var(--slate-600); margin-bottom: 16px;">Utilize o QR Code PIX para realizar o pagamento.</p>
+                                <a href="{{ $ultimoPagamento->invoice_url }}" target="_blank" class="btn-enterprise" style="max-width: 300px; margin: 0 auto; background: var(--primary);">
+                                    <i class="fas fa-qrcode"></i> Ver QR Code PIX
+                                </a>
+                            </div>
+                        @endif
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p style="font-size: 0.8rem; color: var(--slate-400);">Ou utilize os dados do cartão de crédito abaixo:</p>
+                        </div>
+                    </div>
+                @endif
 
                 <!-- Card Form (Default active) -->
                 <div class="payment-panel active" id="cartao-panel">
@@ -862,9 +900,17 @@
         const decimalSep = '{{ $currencyInfo['decimal_separator'] }}';
         const thousandSep = '{{ $currencyInfo['thousand_separator'] }}';
         
-        // Only credit card allowed
-        let selectedPayment = 'cartao';
+        // Pre-selected method logic
+        const preSelectedMethod = '{{ $preSelectedMethod }}';
+        let selectedPayment = preSelectedMethod || 'cartao';
         let currentStep = 1;
+
+        // Auto advance to step 2 if method is pre-selected (Panel Redirect)
+        if (preSelectedMethod) {
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => goToStep(2), 300);
+            });
+        }
 
         // Dynamic Plan Suggestion logic
         const inputMembros = document.getElementById('quantidade_membros');

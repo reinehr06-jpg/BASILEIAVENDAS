@@ -14,7 +14,7 @@ return new class extends Migration
                 $table->decimal('percentual_comissao', 5, 2)->default(0)->after('comissao');
             }
             if (!Schema::hasColumn('vendedores', 'status')) {
-                $table->boolean('status')->default(true)->after('meta_mensal');
+                $table->string('status')->default('ativo')->after('meta_mensal');
             }
         });
 

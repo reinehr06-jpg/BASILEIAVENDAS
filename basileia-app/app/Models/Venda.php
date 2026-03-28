@@ -26,6 +26,8 @@ class Venda extends Model
         'plano', 'plano_id', 'forma_pagamento', 'tipo_negociacao', 'modo_cobranca', 'desconto', 'percentual_desconto',
         'valor_original', 'valor_desconto', 'valor_final', 'valor_comissao', 'observacao', 'observacao_interna', 'observacoes', 'origem', 'data_venda',
         'parcelas',
+        // Campos de checkout
+        'checkout_hash', 'checkout_status',
         // Campos de aprovação
         'requer_aprovacao', 'status_aprovacao', 'aprovado_por', 'aprovado_em',
         // Campos Asaas

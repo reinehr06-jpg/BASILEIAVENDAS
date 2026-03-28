@@ -112,18 +112,19 @@
                         @endif
                     @endif
                 </td>
+                <td>
                     @php
                         $checkoutUrl = $venda->checkout_hash ? url('/checkout/' . $venda->checkout_hash) : null;
                         $boletoCheckoutUrl = $checkoutUrl ? $checkoutUrl . '?method=boleto' : null;
                     @endphp
 
-                    @if(!in_array(strtoupper($venda->getStatusEfetivo()), ['PAGO', 'CANCELADO', 'EXPIRADO', 'ESTORNADO']))
+                    @if(!in_array(strtoupper($venda->status), ['PAGO', 'CANCELADO', 'EXPIRADO', 'ESTORNADO']))
                         @if($checkoutUrl)
                             <div class="d-flex flex-column gap-1">
-                                <button onclick="copiarLinkCheckout({{ $venda->id }})" class="btn btn-success btn-sm" style="font-size: 0.75rem; padding: 4px 8px;" title="Copiar Link de Checkout">
+                                <button onclick="copiarLinkCheckout({{ $venda->id }})" class="btn btn-success btn-sm" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; text-align: left;" title="Copiar Link de Checkout">
                                     <i class="fas fa-link"></i> Link
                                 </button>
-                                <a href="{{ $boletoCheckoutUrl }}" target="_blank" class="btn btn-primary btn-sm" style="font-size: 0.75rem; padding: 4px 8px;" title="Ver Boleto no Checkout">
+                                <a href="{{ $boletoCheckoutUrl }}" target="_blank" class="btn btn-primary btn-sm" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; text-align: left;" title="Ver Boleto no Checkout">
                                     <i class="fas fa-barcode"></i> Boleto
                                 </a>
                             </div>
@@ -133,6 +134,7 @@
                     @else
                         <span style="font-size: 0.8rem; color: var(--text-muted);">—</span>
                     @endif
+                </td>
                 <td style="font-size: 0.85rem; color: var(--text-muted);">{{ $venda->data_venda ? $venda->data_venda->format('d/m/Y') : $venda->created_at->format('d/m/Y') }}</td>
                 <td style="text-align: right;">
                     @if(!in_array(strtoupper($venda->status), ['PAGO', 'CANCELADO', 'EXPIRADO', 'ESTORNADO']))
@@ -206,14 +208,36 @@ async function copiarLinkCheckout(vendaId) {
         const data = await response.json();
         
         if (data.success) {
-            await navigator.clipboard.writeText(data.url);
-            alert('✅ Link copiado para a área de transferência!\n\n' + data.url);
+            const url = data.url;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+                alert('✅ Link copiado para a área de transferência!\n\n' + url);
+            } else {
+                // Fallback: usar textarea temporário
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('✅ Link copiado para a área de transferência!\n\n' + url);
+                } catch (err) {
+                    console.error('Fallback copy failed', err);
+                    alert('⚠️ Não foi possível copiar automaticamente. Use este link:\n\n' + url);
+                }
+                document.body.removeChild(textArea);
+            }
         } else {
             alert('❌ ' + (data.error || 'Erro ao gerar link'));
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro ao copiar link. Tente novamente.');
+        alert('❌ Erro ao buscar link do servidor. Tente novamente.');
     }
 }
 </script>

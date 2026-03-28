@@ -276,10 +276,10 @@
                         <input type="text" name="telefone" class="form-control" placeholder="(11) 99999-9999">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Senha Provisória <span class="required">*</span></label>
-                    <input type="text" name="password" class="form-control" required placeholder="Senha inicial">
-                    <div class="field-hint">O vendedor poderá alterar após o primeiro acesso.</div>
+                <div class="form-group" style="padding: 10px; background: rgba(76,29,149,0.05); border: 1px dashed var(--primary); border-radius: var(--radius-sm);">
+                    <label style="color: var(--primary); font-weight: 700;"><i class="fas fa-lock" style="margin-right: 5px;"></i> Senha Provisória</label>
+                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-top: 5px;">Basileia123</div>
+                    <div class="field-hint" style="color: var(--text-secondary); margin-top: 5px;">O vendedor será <b>obrigado</b> a trocar esta senha no primeiro acesso.</div>
                 </div>
             </div>
 
