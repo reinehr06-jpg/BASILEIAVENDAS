@@ -62,7 +62,7 @@
                     <img src="https://logodownload.org/wp-content/uploads/2015/05/amex-logo-american-express-1.png" style="height: 14px; margin-right: 15px;">
                     <img src="https://logodownload.org/wp-content/uploads/2015/02/elo-logo-1.png" style="height: 14px;">
                 </div>
-                <div class="mt-4 small opacity-50">&copy; {{ date('Y') }} Basileia Vendas - Enterprise Cloud Operations</div>
+                <div class="mt-4 small opacity-50">&copy; {{ date('Y') }} Basileia Vendas - Enterprise Cloud Operations <span class="badge badge-light border ml-1">ELITE 2.5 ACTIVE</span></div>
             </div>
         </div>
     </div>
