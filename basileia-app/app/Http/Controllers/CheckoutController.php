@@ -12,8 +12,9 @@ class CheckoutController extends Controller
 {
     public function show($hash)
     {
+        // Alterado para aceitar múltiplos status de pendência (Aguardando pagamento, pendente, etc)
         $venda = Venda::where('checkout_hash', $hash)
-            ->where('status', 'pendente')
+            ->whereIn('status', ['pendente', 'Aguardando pagamento', 'AGUARDANDO_PAGAMENTO', 'Aguardando aprovação', 'Aguardando Aprovação', 'pendente_asaas'])
             ->firstOrFail();
 
         Log::info("Checkout acessado: Hash {$hash} | Venda ID: {$venda->id}");
@@ -24,7 +25,7 @@ class CheckoutController extends Controller
     public function process(Request $request, $hash)
     {
         $venda = Venda::where('checkout_hash', $hash)
-            ->where('status', 'pendente')
+            ->whereIn('status', ['pendente', 'Aguardando pagamento', 'AGUARDANDO_PAGAMENTO', 'Aguardando aprovação', 'Aguardando Aprovação', 'pendente_asaas'])
             ->firstOrFail();
 
         $request->validate([
@@ -39,12 +40,17 @@ class CheckoutController extends Controller
         try {
             $asaas = app(AsaasService::class);
 
+            // Tenta obter dados do cliente pela relação se não houver campos diretos na venda
+            $nomeCliente = $venda->nome_cliente ?? ($venda->cliente->nome ?? ($venda->cliente->nome_fantasia ?? 'Cliente'));
+            $emailCliente = $venda->email_cliente ?? ($venda->cliente->email ?? '');
+            $telefoneCliente = $venda->telefone_cliente ?? ($venda->cliente->telefone ?? null);
+
             // 1. Cria ou busca o cliente no Asaas pelo CPF
             $customerId = $asaas->criarOuBuscarCliente([
-                'nome'     => $venda->nome_cliente,
+                'nome'     => $nomeCliente,
                 'cpf_cnpj' => $request->cpf_titular,
-                'email'    => $venda->email_cliente,
-                'telefone' => $venda->telefone_cliente ?? null,
+                'email'    => $emailCliente,
+                'telefone' => $telefoneCliente,
             ]);
 
             // 2. Monta os dados do cartão se for credit_card
@@ -74,17 +80,18 @@ class CheckoutController extends Controller
             $cobranca = $asaas->criarCobranca($customerId, [
                 'id'             => $venda->id,
                 'valor_total'    => $venda->valor,
-                'tipo_plano'     => $venda->tipo_plano ?? 'mensal',
-                'cliente_nome'   => $venda->nome_cliente,
-                'cliente_email'  => $venda->email_cliente,
+                'tipo_negociacao' => $venda->tipo_negociacao ?? 'mensal',
+                'cliente_nome'   => $nomeCliente,
+                'cliente_email'  => $emailCliente,
                 'cliente_cpf'    => $request->cpf_titular,
                 'tipo_pagamento' => $tipoPagamento,
             ], $cartao);
 
             // 5. Calcula a data de renovação baseada no plano
             $dataInicio    = Carbon::today();
-            $dataRenovacao = match($venda->tipo_plano ?? 'mensal') {
+            $dataRenovacao = match($venda->tipo_negociacao ?? 'mensal') {
                 'mensal'       => $dataInicio->copy()->addMonth(),
+                'anual'        => $dataInicio->copy()->addYear(),
                 'anual_avista' => $dataInicio->copy()->addYear(),
                 'anual_12x'    => $dataInicio->copy()->addYear(),
                 default        => $dataInicio->copy()->addMonth(),
@@ -94,19 +101,19 @@ class CheckoutController extends Controller
             $venda->update([
                 'asaas_payment_id'  => $cobranca['asaas_payment_id'],
                 'asaas_customer_id' => $customerId,
-                'bank_slip_url'     => $cobranca['bank_slip_url'],
-                'invoice_url'       => $cobranca['invoice_url'],
-                'pix_copia_cola'    => $cobranca['pix_copia_cola'],
-                'pix_qrcode_base64' => $cobranca['pix_qrcode'],
-                'cartao_token'      => $cobranca['cartao_token'],
-                'cartao_bandeira'   => $cobranca['cartao_bandeira'],
-                'cartao_final'      => $cobranca['cartao_final'],
+                'bank_slip_url'     => $cobranca['bank_slip_url'] ?? null,
+                'invoice_url'       => $cobranca['invoice_url'] ?? null,
+                'pix_copia_cola'    => $cobranca['pix_copia_cola'] ?? null,
+                'pix_qrcode_base64' => $cobranca['pix_qrcode'] ?? null,
+                'cartao_token'      => $cobranca['cartao_token'] ?? null,
+                'cartao_bandeira'   => $cobranca['cartao_bandeira'] ?? null,
+                'cartao_final'      => $cobranca['cartao_final'] ?? null,
                 'tipo_pagamento'    => $tipoPagamento,
                 'data_inicio'       => $dataInicio,
                 'data_renovacao'    => $dataRenovacao,
                 'renovacao_ativa'   => true,
                 // Status: cartão já fica confirmado. PIX/boleto aguarda confirmação do Asaas.
-                'status'            => $tipoPagamento === 'cartao' ? 'pago' : 'pendente',
+                'status'            => $tipoPagamento === 'cartao' ? 'Pago' : 'Aguardando pagamento',
             ]);
 
             Log::info("Checkout processado com sucesso: Venda #{$venda->id} | Método: {$tipoPagamento}");
